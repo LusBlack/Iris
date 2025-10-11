@@ -24,6 +24,7 @@ func main() {
 
 	defer db.Close()
 
+	//Converts regular database connection (db) into a migrate-compatible instance
 	instance, err := sqlite3.WithInstance(db, &sqlite3.Config{})
 	if err != nil {
 		log.Fatal(err)
@@ -36,4 +37,21 @@ func main() {
 	}
 
 	m, err := migrate.NewWithInstance("file", fSrc, "sqlite3", instance)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	switch direction {
+	case "up":
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+			log.Fatal(err)
+		}
+	case "down":
+		if err := m.Down(); err != nil && err != migrate.ErrNoChange {
+			log.Fatal(err)
+		}
+	default:
+		log.Fatal("Invalid direction. Use 'up' or 'down'")
+	}
 }
