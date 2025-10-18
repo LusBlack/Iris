@@ -32,3 +32,62 @@ func (m *EventModel) Insert(event *Event) error {
 		event.Date,
 		event.Location).Scan(&event.Id)
 }
+
+func (m *EventModel) GetAll() ([]*Event, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT * FROM events"
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	events := []*Event{}
+
+	for rows.Next() {
+		var event Event
+
+		err := rows.Scan(&event.Id,
+			&event.OwnerId,
+			&event.Name,
+			&event.Description,
+			&event.Date,
+			&event.Location,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, &event)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
+func (m *EventModel) Get(id int) (*Event, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT * FROM events WHERE id = $1"
+
+	var event Event
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(&event.Id, &event.OwnerId, &event.Name, &event.Description, &event.Date, &event.Location)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &event, nil
+
+}
